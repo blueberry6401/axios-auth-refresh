@@ -143,3 +143,11 @@ export function resendFailedRequest(error: any, instance: AxiosInstance): AxiosP
     error.config.skipAuthRefresh = true;
     return instance(error.response.config);
 }
+
+export function createCache(): AxiosAuthRefreshCache {
+    return {
+        skipInstances: [],
+        refreshCall: undefined,
+        requestQueueInterceptorId: undefined,
+    };
+}

@@ -12,6 +12,7 @@ export interface AxiosAuthRefreshOptions {
     interceptNetworkError?: boolean;
     pauseInstanceWhileRefreshing?: boolean;
     onRetry?: (requestConfig: AxiosRequestConfig) => AxiosRequestConfig | Promise<AxiosRequestConfig>;
+    cache?: AxiosAuthRefreshCache;
 
     /**
      * @deprecated

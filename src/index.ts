@@ -9,9 +9,11 @@ import {
     resendFailedRequest,
     shouldInterceptError,
     createRequestQueueInterceptor,
+    createCache,
 } from './utils';
 
 export { AxiosAuthRefreshOptions, AxiosAuthRefreshRequestConfig } from './model';
+export { createCache };
 
 /**
  * Creates an authentication refresh interceptor that binds to any error response.
@@ -37,11 +39,7 @@ export default function createAuthRefreshInterceptor(
         throw new Error('axios-auth-refresh requires `refreshAuthCall` to be a function that returns a promise.');
     }
 
-    const cache: AxiosAuthRefreshCache = {
-        skipInstances: [],
-        refreshCall: undefined,
-        requestQueueInterceptorId: undefined,
-    };
+    const cache: AxiosAuthRefreshCache = options.cache ? options.cache : createCache();
 
     return instance.interceptors.response.use(
         (response: AxiosResponse) => response,

@@ -9,7 +9,9 @@ import {
     createRefreshCall,
     shouldInterceptError,
     createRequestQueueInterceptor,
+    createCache,
 } from '../utils';
+import { makeLogger } from 'ts-loader/dist/logger';
 
 const mockedAxios: () => AxiosStatic | any = () => {
     const bag = {
@@ -341,6 +343,55 @@ describe('Requests interceptor', () => {
         );
         await instance.get('http://example.com');
         expect(onRetry).toHaveBeenCalled();
+    });
+});
+
+describe('Injected cache', () => {
+    it('cache is sharing between axios instances', async () => {
+        const cache = createCache();
+
+        let refreshCount = 0;
+        function refreshFn(tag) {
+            return async (_error: any): Promise<any> => {
+                refreshCount++;
+                await sleep(1000);
+            };
+        }
+        let _shouldRefresh = {};
+        function shouldRefresh(tag) {
+            return _shouldRefresh[tag] ?? true;
+        }
+
+        const axios1 = axios.create();
+        createAuthRefreshInterceptor(axios1, refreshFn('axios1'), { pauseInstanceWhileRefreshing: true, cache });
+        const axios2 = axios.create();
+        createAuthRefreshInterceptor(axios2, refreshFn('axios2'), { pauseInstanceWhileRefreshing: true, cache });
+        await Promise.all([axios1.get('https://httpstat.us/401'), axios2.get('https://httpstat.us/401')]).catch(
+            () => {}
+        );
+        expect(refreshCount).toEqual(1);
+    });
+    it('cache is not sharing between axios instances', async () => {
+        let refreshCount = 0;
+        function refreshFn(tag) {
+            return async (_error: any): Promise<any> => {
+                refreshCount++;
+                await sleep(1000);
+            };
+        }
+        let _shouldRefresh = {};
+        function shouldRefresh(tag) {
+            return _shouldRefresh[tag] ?? true;
+        }
+
+        const axios1 = axios.create();
+        createAuthRefreshInterceptor(axios1, refreshFn('axios1'), { pauseInstanceWhileRefreshing: true });
+        const axios2 = axios.create();
+        createAuthRefreshInterceptor(axios2, refreshFn('axios2'), { pauseInstanceWhileRefreshing: true });
+        await Promise.all([axios1.get('https://httpstat.us/401'), axios2.get('https://httpstat.us/401')]).catch(
+            () => {}
+        );
+        expect(refreshCount).toEqual(2);
     });
 });
 
