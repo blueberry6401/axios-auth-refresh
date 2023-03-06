@@ -346,6 +346,47 @@ describe('Requests interceptor', () => {
     });
 });
 
+describe('Response interceptor', () => {
+    it('uses the request interceptor to call the onRetry callback before retrying the request', async () => {
+        const instance = axios.create();
+        const onRetry = jest.fn((requestConfig: AxiosRequestConfig) => {
+            // modify the url to one that will respond with status code 200
+            return {
+                ...requestConfig,
+                url: 'https://httpstat.us/200',
+            };
+        });
+        createAuthRefreshInterceptor(instance, (error) => Promise.resolve(), { onRetry });
+
+        await instance.get('https://httpstat.us/401');
+
+        expect(onRetry).toHaveBeenCalled();
+    });
+
+    it('uses the request interceptor to call the onRetry callback before retrying all the requests', async () => {
+        const instance = axios.create();
+        const onRetry = jest.fn((requestConfig: AxiosRequestConfig) => {
+            // modify the url to one that will respond with status code 200
+            return {
+                ...requestConfig,
+                url: 'https://httpstat.us/200',
+            };
+        });
+        createAuthRefreshInterceptor(instance, (error) => Promise.resolve(), { onRetry });
+
+        const requests = [
+            instance.get('https://httpstat.us/401'),
+            instance.get('https://httpstat.us/401'),
+            instance.get('https://httpstat.us/401'),
+            instance.get('https://httpstat.us/401'),
+        ];
+
+        await Promise.all(requests);
+
+        expect(onRetry).toHaveBeenCalledTimes(requests.length);
+    });
+});
+
 describe('Injected cache', () => {
     it('cache is sharing between axios instances', async () => {
         const cache = createCache();
